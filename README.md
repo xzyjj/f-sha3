@@ -1,6 +1,8 @@
 # f-sha3
 
-    The code of sha3 comes from the libf library implementation.
+  f-sha3 is an implementation of a Keccak secure hash algorithm 3.
+
+  > This code comes from the libf library.
 
 ## licenses
 
@@ -9,7 +11,7 @@
 
 ## test_sha3_stream
 
-    Execution output:
+  Execution output:
 
 ```
 $ printf 'Hello, world' |./test_sha3_stream
