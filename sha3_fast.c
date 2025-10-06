@@ -28,7 +28,7 @@ static const uint8_t keccak_rho[5][5] = {
 	};
 
 #undef ROTL64
-#define ROTL64(x, n) ((x << n) | (x >> (64 - n)))
+#define ROTL64(x, n) (((x) << (n)) | ((x) >> (64 - (n))))
 /* end */
 
 /* @func: _keccak_f1600 (static) - keccak-f permutation function
@@ -225,8 +225,8 @@ static void _keccak_f1600(uint64_t state[5][5]) {
 } /* end */
 
 /* @func: _keccak_absorb (static) - keccak absorb function
-* @param1: uint64 [5][5] # state buffer
-* @param2: const uint8 *  # input buffer
+* @param1: uint64L [5][5] # state buffer
+* @param2: const uint8 *  # input buffer (length: >=rate)
 * @param3: uint32         # input length
 * @param4: uint32         # bitrate length (byte)
 * @return: uint32         # remaining length
@@ -263,9 +263,9 @@ static uint32_t _keccak_absorb(uint64_t state[5][5], const uint8_t *in,
 static void _keccak_squeeze(uint64_t state[5][5], uint8_t *out, uint32_t len,
 		uint32_t rate) {
 	while (len) {
-		for (uint32_t i = 0; i < rate && len; i++) {
+		for (uint32_t i = 0; i < (rate / 8) && len; i++) {
 			uint64_t A = ((uint64_t *)state)[i];
-			if (len < 8) { /* len < rste */
+			if (len < 8) {
 				for (uint32_t k = 0; k < len; k++) {
 					*out++ = (uint8_t)A;
 					A >>= 8;
@@ -301,32 +301,39 @@ static void _keccak_squeeze(uint64_t state[5][5], uint8_t *out, uint32_t len,
 */
 int32_t sha3_init(struct sha3_ctx *ctx, int32_t type, uint32_t dsize) {
 	ctx->pad = 0x06;
-	if (type == SHA3_224_TYPE) {
-		ctx->rate = SHA3_224_RATE;
-		ctx->dsize = SHA3_224_LEN;
-	} else if (type == SHA3_256_TYPE) {
-		ctx->rate = SHA3_256_RATE;
-		ctx->dsize = SHA3_256_LEN;
-	} else if (type == SHA3_384_TYPE) {
-		ctx->rate = SHA3_384_RATE;
-		ctx->dsize = SHA3_384_LEN;
-	} else if (type == SHA3_512_TYPE) {
-		ctx->rate = SHA3_512_RATE;
-		ctx->dsize = SHA3_512_LEN;
-	} else if (type == SHA3_SHAKE128_TYPE) {
-		if (!dsize || dsize > SHA3_STATE_SIZE)
-			return -2;
-		ctx->rate = SHA3_SHAKE128_RATE;
-		ctx->dsize = dsize;
-		ctx->pad = 0x1f;
-	} else if (type == SHA3_SHAKE256_TYPE) {
-		if (!dsize || dsize > SHA3_STATE_SIZE)
-			return -2;
-		ctx->rate = SHA3_SHAKE256_RATE;
-		ctx->dsize = dsize;
-		ctx->pad = 0x1f;
-	} else {
-		return -1;
+	switch (type) {
+		case SHA3_224_TYPE:
+			ctx->rate = SHA3_224_RATE;
+			ctx->dsize = SHA3_224_LEN;
+			break;
+		case SHA3_256_TYPE:
+			ctx->rate = SHA3_256_RATE;
+			ctx->dsize = SHA3_256_LEN;
+			break;
+		case SHA3_384_TYPE:
+			ctx->rate = SHA3_384_RATE;
+			ctx->dsize = SHA3_384_LEN;
+			break;
+		case SHA3_512_TYPE:
+			ctx->rate = SHA3_512_RATE;
+			ctx->dsize = SHA3_512_LEN;
+			break;
+		case SHA3_SHAKE128_TYPE:
+			if (!dsize || dsize > SHA3_STATE_SIZE)
+				return -2;
+			ctx->rate = SHA3_SHAKE128_RATE;
+			ctx->dsize = dsize;
+			ctx->pad = 0x1f;
+			break;
+		case SHA3_SHAKE256_TYPE:
+			if (!dsize || dsize > SHA3_STATE_SIZE)
+				return -2;
+			ctx->rate = SHA3_SHAKE256_RATE;
+			ctx->dsize = dsize;
+			ctx->pad = 0x1f;
+			break;
+		default:
+			return -1;
 	}
 
 	memset(ctx->state, 0, sizeof(ctx->state));
